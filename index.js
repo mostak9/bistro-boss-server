@@ -2,11 +2,15 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const port = process.env.PORT || 5000;
 require("dotenv").config();
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.6nmlwzx.mongodb.net/?retryWrites=true&w=majority`;
 
 
-const port = process.env.PORT || 5000;
+
+
 
 // middleware
 app.use(cors());
@@ -30,8 +34,7 @@ const verifyToken = (req, res, next) => {
 
 
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.6nmlwzx.mongodb.net/?retryWrites=true&w=majority`;
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -42,16 +45,26 @@ const client = new MongoClient(uri, {
   },
 });
 
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
+
+
+
+
+    // collections
     const menuCollections = client.db("bostroBossDB").collection("menuItems");
     const cartsCollections = client.db("bostroBossDB").collection("cartItems");
     const usersCollections = client.db("bostroBossDB").collection("users");
     const paymentsCollections = client.db("bostroBossDB").collection("payments");
 
+
+
+    // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded?.email
       const query = {email: email};
@@ -62,6 +75,9 @@ async function run() {
       }
       next();
     }
+
+
+
 
     // jwt related api
     app.post("/api/v1/jwt", (req, res) => {
@@ -75,6 +91,11 @@ async function run() {
       res.send({ token });
     });
 
+
+
+
+
+
     // menu related api
     app.get("/api/v1/allMenu", async (req, res) => {
       const result = await menuCollections.find().toArray();
@@ -87,6 +108,10 @@ async function run() {
       const result = await menuCollections.findOne(query);
       res.send(result);
     })
+
+
+
+
 
     //////// carts collection
     app.post("/api/v1/allCarts", verifyToken, async (req, res) => {
@@ -108,6 +133,11 @@ async function run() {
       const result = await cartsCollections.deleteOne(query);
       res.send(result);
     });
+
+
+
+
+
 
     // payments related api
     app.post('/api/v1/create-payment-intent', async (req, res) => {
@@ -148,6 +178,10 @@ async function run() {
       res.send({paymentResult, deleteResult});
     })
 
+
+
+
+
     ////////// user related api
     app.post("/api/v1/users", async (req, res) => {
       const user = req.body;
@@ -159,6 +193,10 @@ async function run() {
       const result = await usersCollections.insertOne(user);
       res.send(result);
     });
+
+
+
+
 
     //////////////// admin related api
     app.get("/api/v1/allUsers", verifyToken, verifyAdmin, async (req, res) => {
@@ -232,6 +270,9 @@ async function run() {
       res.send(result);
     })
 
+
+
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -243,6 +284,11 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+
+
+
+
 
 app.get("/", (req, res) => {
   res.send("BISTRO BOSS RESTAURANT SERVER IS ONLINE");
